@@ -1,0 +1,12 @@
+#/bin/sh
+
+local_port="$1"
+
+if [ "$local_port" = "" ]
+then
+  echo "Usage: port-forward LOCAL_PORT"
+  return 1
+fi
+
+kubectl port-forward svc/db "$local_port:5432"
+

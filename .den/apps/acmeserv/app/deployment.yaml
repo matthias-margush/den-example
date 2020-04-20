@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: acmeserv
+  labels:
+    app: acmeserv
+spec:
+  selector:
+    matchLabels:
+      app: acmeserv
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: acmeserv
+    spec:
+      serviceAccountName: app
+      containers:
+      - name: app
+        image: postgrest/postgrest:latest
+        env:
+        - name: PGRST_DB_SCHEMA
+          value: api
+        - name: PGRST_ANON_ROLE
+          value: web_anon
+        - name: PGRST_DB_URI
+          value: postgresql://authenticator:mysecretpassword@db:5432

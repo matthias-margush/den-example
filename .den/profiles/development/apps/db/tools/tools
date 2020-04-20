@@ -1,0 +1,8 @@
+#!/bin/sh
+
+cat - <<EOF
+Available Tools:
+  lease           Obtain leased db credentials
+  port-forward    Forward a local port to the database
+  psql            Exec psql within a container on the cluster
+EOF

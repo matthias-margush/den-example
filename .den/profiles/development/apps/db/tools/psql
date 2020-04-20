@@ -1,0 +1,13 @@
+#!/bin/sh
+
+if [ "$PGUSER" = "" ]
+then
+  eval "$(tools/lease developer)"
+fi
+
+if [ -t 1 ]
+then
+  kubectl exec -it svc/db -- psql -U "$PGUSER" "$@"
+else
+  kubectl exec -i svc/db -- psql -U "$PGUSER" "$@"
+fi

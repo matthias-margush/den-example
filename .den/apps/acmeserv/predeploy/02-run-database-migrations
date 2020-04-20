@@ -1,0 +1,35 @@
+#!/bin/sh -e
+
+psql() {
+  den db/psql "$@"
+}
+
+create_db() {
+  local database="$1"
+
+  eval "$(den db/lease ci)"
+  printf "Running database migrations\n"
+  psql acmedb <<EOF >/dev/null
+    CREATE SCHEMA api;
+
+    CREATE TABLE IF NOT EXISTS api.todos (
+      id SERIAL PRIMARY KEY,
+      done BOOLEAN NOT NULL DEFAULT FALSE,
+      task TEXT NOT NULL,
+      due TIMESTAMP WITH TIME ZONE
+    );
+
+    INSERT INTO api.todos (task) values
+      ('finish tutorial 0'),
+      ('pat self on back');
+
+    CREATE ROLE web_anon NOLOGIN;
+    GRANT USAGE ON SCHEMA api to web_anon;
+    GRANT SELECT ON api.todos to web_anon;
+    CREATE ROLE authenticator NOINHERIT LOGIN PASSWORD 'mysecretpassword';
+    GRANT WEB_ANON TO authenticator;
+EOF
+}
+
+create_db acmedb
+

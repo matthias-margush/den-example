@@ -1,0 +1,48 @@
+#!/bin/sh
+
+name="$1"
+
+if ! [ -d "app/.git" ]
+then
+  git clone https://github.com/hashicorp/vault-helm.git app
+  (cd app && git checkout v0.4.0)
+fi
+
+# kubectl pods -l "app.kubernetes.io/name=vault"
+if ! helm status "$name" | grep -q 'STATUS: deployed'
+then
+  kubectl delete clusterrole/vault-agent-injector-clusterrole
+  kubectl delete clusterrolebinding/vault-agent-injector-binding
+  kubectl delete clusterrolebinding/vault-server-binding
+  kubectl delete MutatingWebhookConfiguration/vault-agent-injector-cfg
+
+  helm install "$name" app --set='server.dev.enabled=true' --wait
+fi
+
+selectors='app.kubernetes.io/instance=vault,app.kubernetes.io/name=vault'
+kubectl wait pods --for=condition=Ready -l "$selectors" --timeout 20s
+
+kubectl exec -i svc/vault -- sh <<EOF
+vault secrets list >/dev/null >&1 | grep -q kv
+if [ $? -ne 0 ]
+then
+  vault secrets enable -version=2 kv
+fi
+
+cat <<EOP >/home/vault/app-policy.hcl
+path "secret*" {
+  capabilities = ["read"]
+}
+EOP
+
+vault policy write app /home/vault/app-policy.hcl
+vault auth enable kubernetes 2>/dev/null
+if ! vault read auth/kubernetes/config >/dev/null 2>&1
+then
+  vault write auth/kubernetes/config \
+     token_reviewer_jwt="\$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+     kubernetes_host=https://${KUBERNETES_PORT_443_TCP_ADDR}:443 \
+     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+fi
+EOF
+

@@ -1,0 +1,5 @@
+DEN_CONTEXT=minikube-backend
+DEN_CLUSTER_NAME=minikube
+DEN_CLUSTER_USER=minikube
+DEN_NAMESPACE=backend
+DEN_PROFILE=development

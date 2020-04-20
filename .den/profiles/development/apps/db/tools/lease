@@ -1,0 +1,22 @@
+#!/bin/sh
+
+role="$1"
+shift
+if [ "$role" == "" ]
+then
+  echo "Usage: lease DATABASE ROLE" >&2
+  exit 1
+fi
+
+export PGUSER=$(kubectl exec svc/vault -- vault read -field=username database/creds/"$role")
+export PGPASSWORD=$(kubectl exec svc/vault -- vault read -field=password database/creds/"$role")
+export PGPORT=5432
+
+if [ $# -gt 0 ]
+then
+  "$@"
+else
+  printf "export PGUSER=$PGUSER\n"
+  printf "export PGPASSWORD=$PGPASSWORD\n"
+fi
+

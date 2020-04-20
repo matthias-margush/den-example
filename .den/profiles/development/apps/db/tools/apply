@@ -1,0 +1,10 @@
+#!/bin/sh -x
+
+kubectl apply -k app
+kubectl wait --for=condition=Ready pods -l "app=db" --timeout=600s
+
+tools/bootstrap-db-with-vault db
+den vault/db-role-provision db developer SELECT,INSERT,UPDATE,DELETE,TRUNCATE CREATEDB
+den vault/db-role-provision db app SELECT,INSERT,UPDATE,DELETE
+den vault/db-role-provision db view SELECT
+den vault/db-role-provision db ci SELECT,INSERT,UPDATE,DELETE,TRUNCATE CREATEDB CREATEROLE SUPERUSER

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+kubectl wait --for=condition=Ready pods -l "app.kubernetes.io/name=vault" --timeout=600s
+

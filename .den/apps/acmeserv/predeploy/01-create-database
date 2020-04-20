@@ -1,0 +1,20 @@
+#!/bin/sh -e
+
+psql() {
+  den db/psql "$@"
+}
+
+create_db() {
+  local database="$1"
+
+  eval "$(den db/lease ci)"
+  printf "Creating database: %s\n" "$database"
+  if ! psql postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$database'" | grep -q 1
+  then
+  psql postgres <<EOF >/dev/null
+    CREATE DATABASE $database;
+EOF
+  fi
+}
+
+create_db acmedb
