@@ -1,0 +1,14 @@
+#!/bin/sh -x
+
+KAFKA_REPLICATION_FACTOR="${KAFKA_REPLICATION_FACTOR:-1}"
+
+cat <<EOF >app/replication-factor-patch.yaml
+apiVersion: kafka.strimzi.io/v1beta1
+kind: KafkaTopic
+metadata:
+  name: my-topic
+spec:
+  replicas: 3
+EOF
+
+kubectl apply -k app

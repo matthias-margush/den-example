@@ -1,0 +1,15 @@
+#!/bin/sh
+
+name="$1"
+
+if ! [ -d "app/.git" ]
+then
+  git clone https://github.com/strimzi/strimzi-kafka-operator.git app
+  (cd app && git checkout v0.17.0)
+fi
+
+(
+  cd app
+  sed -i '' "s/namespace: .*/namespace: $DEN_NAMESPACE/" install/cluster-operator/*RoleBinding*.yaml
+  kubectl apply -f install/cluster-operator -n "$DEN_NAMESPACE"
+)

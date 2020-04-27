@@ -1,4 +1,7 @@
-kind: Kustomization
 resources:
 - deployment.yaml
+- kafka-topics.yaml
 - serviceaccount.yaml
+
+patchesStrategicMerge:
+- replication-factor-patch.yaml
