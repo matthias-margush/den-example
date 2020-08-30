@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: acmeserv
+  name: acme
   labels:
-    app: acmeserv
+    app: acme
 spec:
   selector:
     matchLabels:
-      app: acmeserv
+      app: acme
   replicas: 1
   template:
     metadata:
       labels:
-        app: acmeserv
+        app: acme
     spec:
       serviceAccountName: app
       containers:

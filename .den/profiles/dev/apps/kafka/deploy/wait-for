@@ -1,5 +1,6 @@
 #!/bin/sh
 
+den="$1"; shift
 kubectl wait kafka/kafka --for=condition=Ready --timeout=300s
 
 

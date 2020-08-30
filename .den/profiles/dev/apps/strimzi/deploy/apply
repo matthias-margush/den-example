@@ -1,5 +1,6 @@
 #!/bin/sh
 
+den="$1"; shift
 name="$1"
 
 if ! [ -d "app/.git" ]

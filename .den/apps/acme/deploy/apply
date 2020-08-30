@@ -1,5 +1,6 @@
 #!/bin/sh -x
 
+den="$1"; shift
 KAFKA_REPLICATION_FACTOR="${KAFKA_REPLICATION_FACTOR:-1}"
 
 cat <<EOF >app/replication-factor-patch.yaml
