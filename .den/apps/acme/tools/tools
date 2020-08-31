@@ -1,0 +1,6 @@
+#!/bin/sh
+
+cat - <<EOF
+Available Tools:
+  psql            Connect to the acme database as a dev user
+EOF

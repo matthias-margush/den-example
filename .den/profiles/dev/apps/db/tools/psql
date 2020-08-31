@@ -1,13 +1,14 @@
-#!/bin/sh
+#!/bin/sh -e
 
 if [ "$PGUSER" = "" ]
 then
+  printf "Connecting with developer role\n"
   eval "$(tools/lease developer)"
 fi
 
 if [ -t 1 ]
 then
-  kubectl exec -it svc/db -- psql -U "$PGUSER" "$@"
+  kubectl exec -it svc/db -- env PGOPTIONS="$PGOPTIONS" psql -U "$PGUSER" "$@"
 else
-  kubectl exec -i svc/db -- psql -U "$PGUSER" "$@"
+  kubectl exec -i svc/db -- env PGOPTIONS="$PGOPTIONS" psql -U "$PGUSER" "$@"
 fi

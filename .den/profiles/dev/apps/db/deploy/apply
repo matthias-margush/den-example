@@ -4,8 +4,37 @@ den="$1"; shift
 kubectl apply -k app
 kubectl wait --for=condition=Ready pods -l "app=db" --timeout=600s
 
-tools/bootstrap-db-with-vault db
-den vault/db-role-provision db developer SELECT,INSERT,UPDATE,DELETE,TRUNCATE CREATEDB
-den vault/db-role-provision db app SELECT,INSERT,UPDATE,DELETE
-den vault/db-role-provision db view SELECT
-den vault/db-role-provision db ci SELECT,INSERT,UPDATE,DELETE,TRUNCATE CREATEDB CREATEROLE SUPERUSER
+psql() {
+  kubectl exec -i svc/db -- psql "$@"
+}
+
+# Create some default roles
+create_roles() {
+  export PG_OPTS="?sslmode=disable"
+  den vault/provision-db-role db developer SELECT,INSERT,UPDATE,DELETE,TRUNCATE CREATEDB
+  den vault/provision-db-role db app SELECT,INSERT,UPDATE,DELETE
+  den vault/provision-db-role db view SELECT
+  den vault/provision-db-role db ci SELECT,INSERT,UPDATE,DELETE,TRUNCATE CREATEDB CREATEROLE SUPERUSER
+}
+
+# Provisions the vault role in the database and disables the default postgres user
+provision_vault_role() {
+  local db_name="$1"
+  if ! den vault/vault kv get "secret/${db_name}-vault"
+  then
+    pass="$(den vault/genpass)"
+    den vault/vault kv put "secret/${db_name}-vault" "PGPASSWORD=$pass" "PGUSER=vault"
+
+    PGPASSWORD= psql -U postgres \
+      -c "CREATE ROLE vault WITH ENCRYPTED PASSWORD '$pass' LOGIN SUPERUSER;"
+
+    PGPASSWORD= psql -U postgres \
+      -c "CREATE DATABASE vault;"
+
+    psql -c 'dropuser postgres;'
+
+  fi
+}
+
+provision_vault_role db
+create_roles

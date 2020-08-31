@@ -14,7 +14,7 @@ export PGPORT=5432
 
 if [ $# -gt 0 ]
 then
-  "$@"
+  den db/psql "$@"
 else
   printf "export PGUSER=$PGUSER\n"
   printf "export PGPASSWORD=$PGPASSWORD\n"

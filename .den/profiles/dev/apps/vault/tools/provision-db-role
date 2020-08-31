@@ -1,0 +1,85 @@
+#!/bin/sh
+
+usage() {
+  echo "Usage: provision-db-role DATABASE ROLE PRIVILEGES" >&2
+  exit 1
+}
+
+db="$1"
+shift
+if [ "$db" == "" ]
+then
+  usage
+fi
+
+vault_role="$1"
+shift
+if [ "$vault_role" == "" ]
+then
+  usage
+fi
+
+privileges="$1"
+shift
+if [ "$privileges" == "" ]
+then
+  usage
+fi
+
+db_roles="$*"
+
+vault() {
+  kubectl exec -i svc/vault -- vault "$@"
+}
+
+# Enables the vault database engine
+enable_vault_database_engine() {
+  vault secrets list | grep -q database || vault secrets enable database
+}
+
+# Allow a vault role to to access a database
+grant_vault_role_db_access() {
+  local db="$1"
+  local vault_role="$2"
+
+  allowed=$(vault read -field allowed_roles -format=json "database/config/$db" | tr -d '[]"')
+  if [ "$allowed" != "" ]
+  then
+    allowed="${allowed}, $vault_role"
+  else
+    allowed="$vault_role"
+  fi
+
+  # vault kv get secret/db-vault
+  PGUSER=$(vault kv get -field PGUSER "secret/${db}-vault")
+  PGPASSWORD=$(vault kv get -field PGPASSWORD "secret/${db}-vault")
+
+  # Configure the vault database engine with the details to provision postgres roles
+  vault write "database/config/$db" \
+      plugin_name=postgresql-database-plugin \
+      allowed_roles="$allowed" \
+      connection_url="postgresql://{{username}}:{{password}}@${db}:5432/${PG_OPTS}" \
+      username="$PGUSER" \
+      password="$PGPASSWORD"
+}
+
+#
+create_db_role_provisioner() {
+  local db="$1"
+  local vault_role="$2"
+  local privileges="$3"
+
+  vault write "database/roles/$vault_role" \
+      db_name=$db \
+      creation_statements="\
+        CREATE ROLE \"{{name}}\" \
+          WITH ENCRYPTED PASSWORD '{{password}}' VALID UNTIL '{{expiration}}' \
+          LOGIN $db_roles; \
+        GRANT $privileges ON ALL TABLES IN SCHEMA public TO \"{{name}}\";" \
+      default_ttl="1h" \
+      max_ttl="24h"
+}
+
+enable_vault_database_engine
+grant_vault_role_db_access "$db" "$vault_role"
+create_db_role_provisioner "$db" "$vault_role" "$privileges"
