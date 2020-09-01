@@ -1,6 +1,5 @@
 #!/bin/sh
 
-den="$1"; shift
 kubectl apply -k app
 kubectl wait --for=condition=Ready pods -l "app=db" --timeout=600s
 

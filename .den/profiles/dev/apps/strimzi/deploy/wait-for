@@ -1,4 +1,3 @@
 #!/bin/sh
 
-den="$1"; shift
 # nothing to wait for
